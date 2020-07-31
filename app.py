@@ -1,13 +1,34 @@
 from flask import Flask, request
 from flask_restful import Resource, Api
-from models import Pessoas
-from models import Atividades
+from models import Pessoas, Atividades, Usuarios
+from flask_httpauth import HTTPBasicAuth
 
+auth = HTTPBasicAuth()
 app = Flask(__name__)
 api = Api(app)
 
+'''
+USUARIOS = {
+    'christopher':'123',
+    'albert':'456'
+}
+
+
+@auth.verify_password
+def verificacao(login,senha):
+    if not (login,senha):
+        return False
+    return USUARIOS.get(login) == senha
+'''
+@auth.verify_password
+def verificacao(login,senha):
+    if not (login,senha):
+        return False
+    return Usuarios.query.filter_by(login=login,senha=senha).first()
+
 
 class Pessoa(Resource):
+    @auth.login_required
     def get(self, nome):
         try:
             pessoa = Pessoas.query.filter_by(nome=nome).first()
@@ -47,6 +68,7 @@ class Pessoa(Resource):
             return {'status':'error','mensagem':'Pessoa nao encontrada'}
 
 class ListaPessoas(Resource):
+    @auth.login_required
     def get(self):
         pessoas = Pessoas.query.all() #cuidado! pega tudo
         response = [{'id':p.id,'nome':p.nome,'idade':p.idade}for p in pessoas]
